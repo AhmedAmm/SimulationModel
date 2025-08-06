@@ -1,0 +1,384 @@
+{
+  "session_summary": {
+    "session_id": "session_1754422641_8971",
+    "start_time": 1754422641.0487556,
+    "end_time": 1754422673.1793633,
+    "start_datetime": "2025-08-05T20:37:21.048756",
+    "end_datetime": "2025-08-05T20:37:53.179363",
+    "duration_minutes": 0.5355101267496745,
+    "total_exchanges": 0,
+    "session_state": "active"
+  },
+  "participants": {
+    "client_profile": {
+      "company": "Manufacturing Inc",
+      "industry": "Manufacturing",
+      "size": "Enterprise",
+      "role": "CTO",
+      "timeline": "Evaluation and decision-making processes can be lengthy, often spanning 6-18 months or more for significant investments, involving multiple departments and rigorous testing phases.",
+      "budget_range": "Typically substantial, ranging from millions to hundreds of millions of dollars for significant technology upgrades, new facility builds, or large-scale process automation. Budgets are often project-based and require strong ROI justification."
+    },
+    "product_context": {
+      "name": "CloudPlatform Pro",
+      "vendor": "TechCorp",
+      "category": "Enterprise Software",
+      "pricing_model": "Contact for pricing"
+    }
+  },
+  "conversation_exchanges": [],
+  "technical_metrics": {
+    "whisper_processing": {
+      "total_chunks_received": 0,
+      "chunks_per_exchange": 0,
+      "average_chunk_length": 0
+    },
+    "response_performance": {
+      "average_response_time": 0,
+      "response_times": [],
+      "processing_errors": []
+    },
+    "orchestrator_config": {
+      "silence_threshold": 5.0,
+      "fastapi_base_url": "http://localhost:8000"
+    }
+  },
+  "sales_analysis": {
+    "session_overview": {
+      "session_info": {
+        "initialized": true,
+        "meeting_stage": "opening",
+        "rag_system_active": true,
+        "fastapi_base_url": "http://localhost:8000"
+      },
+      "client_profile": {
+        "company": "Manufacturing Inc",
+        "industry": "Manufacturing",
+        "size": "Enterprise",
+        "role": "CTO",
+        "timeline": "Evaluation and decision-making processes can be lengthy, often spanning 6-18 months or more for significant investments, involving multiple departments and rigorous testing phases.",
+        "budget_range": "Typically substantial, ranging from millions to hundreds of millions of dollars for significant technology upgrades, new facility builds, or large-scale process automation. Budgets are often project-based and require strong ROI justification."
+      },
+      "product_context": {
+        "name": "CloudPlatform Pro",
+        "vendor": "TechCorp",
+        "category": "Enterprise Software",
+        "pricing_model": "Contact for pricing"
+      },
+      "question_metrics": {
+        "total_generated": 4,
+        "answered": 0,
+        "remaining": 4,
+        "answer_rate": 0.0,
+        "avg_quality_score": 0
+      },
+      "priority_breakdown": {
+        "critical": {
+          "total": 3,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "high": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "medium": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "low": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        }
+      },
+      "category_breakdown": {
+        "pricing": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "competitors": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "product_features": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "company_reputation": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "technical_specs": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "support_service": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "implementation": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "roi_value": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "security_compliance": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "integration": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "case_studies": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "scalability": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "customization": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "vendor_stability": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "other": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        }
+      },
+      "conversation_metrics": {
+        "total_exchanges": 0,
+        "duration_minutes": 0
+      },
+      "meeting_assessment": {
+        "should_end": false,
+        "completion_percentage": 0.0,
+        "meeting_quality": "Needs Improvement"
+      }
+    },
+    "detailed_analysis": {
+      "questions_by_priority": {
+        "critical": [
+          {
+            "id": "026d8312",
+            "text": "How does CloudPlatform Pro specifically differentiate from leading competitors in terms of Return on Investment (ROI) & Total Cost of Ownership (TCO): Quantifiable benefits, payback periods, and long-term cost savings are critical., Operational Efficiency Gains: Improvements in throughput, yield, waste reduction, and energy consumption.?",
+            "category": "competitors",
+            "answered": false,
+            "quality_score": 0.0,
+            "business_rationale": "Critical for CTO to justify vendor selection"
+          },
+          {
+            "id": "446d42a1",
+            "text": "What specific ROI metrics and timeframes can you provide for Enterprise Manufacturing companies, and how do you measure success against our current Enterprise Resource Planning (ERP) systems (e.g., SAP, Oracle, Microsoft Dynamics).?",
+            "category": "roi_value",
+            "answered": false,
+            "quality_score": 0.0,
+            "business_rationale": "Essential for business case development and stakeholder buy-in"
+          },
+          {
+            "id": "89001b61",
+            "text": "How does TechCorp ensure compliance with Industry-specific quality standards (e.g., ISO 9001, AS9100 for aerospace, IATF 16949 for automotive)., Environmental regulations (e.g., EPA standards, emissions controls). and what security certifications do you maintain relevant to Manufacturing sector?",
+            "category": "security_compliance",
+            "answered": false,
+            "quality_score": 0.0,
+            "business_rationale": "Mandatory for risk management and regulatory compliance"
+          }
+        ],
+        "high": [
+          {
+            "id": "ac2246db",
+            "text": "Given our Enterprise scale and Integration with existing ERP, MES, SCADA, PLM systems., IoT connectivity for sensor data collection and machine monitoring., what are the specific implementation challenges and resource requirements we should anticipate?",
+            "category": "implementation",
+            "answered": false,
+            "quality_score": 0.0,
+            "business_rationale": "Critical for project planning and resource allocation"
+          }
+        ],
+        "medium": [],
+        "low": []
+      },
+      "questions_by_category": {
+        "pricing": [],
+        "competitors": [
+          {
+            "id": "026d8312",
+            "text": "How does CloudPlatform Pro specifically differentiate from leading competitors in terms of Return on Investment (ROI) & Total Cost of Ownership (TCO): Quantifiable benefits, payback periods, and long-term cost savings are critical., Operational Efficiency Gains: Improvements in throughput, yield, waste reduction, and energy consumption.?",
+            "priority": "critical",
+            "answered": false,
+            "quality_score": 0.0
+          }
+        ],
+        "product_features": [],
+        "company_reputation": [],
+        "technical_specs": [],
+        "support_service": [],
+        "implementation": [
+          {
+            "id": "ac2246db",
+            "text": "Given our Enterprise scale and Integration with existing ERP, MES, SCADA, PLM systems., IoT connectivity for sensor data collection and machine monitoring., what are the specific implementation challenges and resource requirements we should anticipate?",
+            "priority": "high",
+            "answered": false,
+            "quality_score": 0.0
+          }
+        ],
+        "roi_value": [
+          {
+            "id": "446d42a1",
+            "text": "What specific ROI metrics and timeframes can you provide for Enterprise Manufacturing companies, and how do you measure success against our current Enterprise Resource Planning (ERP) systems (e.g., SAP, Oracle, Microsoft Dynamics).?",
+            "priority": "critical",
+            "answered": false,
+            "quality_score": 0.0
+          }
+        ],
+        "security_compliance": [
+          {
+            "id": "89001b61",
+            "text": "How does TechCorp ensure compliance with Industry-specific quality standards (e.g., ISO 9001, AS9100 for aerospace, IATF 16949 for automotive)., Environmental regulations (e.g., EPA standards, emissions controls). and what security certifications do you maintain relevant to Manufacturing sector?",
+            "priority": "critical",
+            "answered": false,
+            "quality_score": 0.0
+          }
+        ],
+        "integration": [],
+        "case_studies": [],
+        "scalability": [],
+        "customization": [],
+        "vendor_stability": [],
+        "other": []
+      },
+      "unanswered_critical": [
+        {
+          "text": "How does CloudPlatform Pro specifically differentiate from leading competitors in terms of Return on Investment (ROI) & Total Cost of Ownership (TCO): Quantifiable benefits, payback periods, and long-term cost savings are critical., Operational Efficiency Gains: Improvements in throughput, yield, waste reduction, and energy consumption.?",
+          "category": "competitors",
+          "business_rationale": "Critical for CTO to justify vendor selection",
+          "expected_answer_type": "Specific feature and value comparisons"
+        },
+        {
+          "text": "What specific ROI metrics and timeframes can you provide for Enterprise Manufacturing companies, and how do you measure success against our current Enterprise Resource Planning (ERP) systems (e.g., SAP, Oracle, Microsoft Dynamics).?",
+          "category": "roi_value",
+          "business_rationale": "Essential for business case development and stakeholder buy-in",
+          "expected_answer_type": "Quantifiable metrics with industry benchmarks"
+        },
+        {
+          "text": "How does TechCorp ensure compliance with Industry-specific quality standards (e.g., ISO 9001, AS9100 for aerospace, IATF 16949 for automotive)., Environmental regulations (e.g., EPA standards, emissions controls). and what security certifications do you maintain relevant to Manufacturing sector?",
+          "category": "security_compliance",
+          "business_rationale": "Mandatory for risk management and regulatory compliance",
+          "expected_answer_type": "Specific certifications and compliance documentation"
+        }
+      ],
+      "top_quality_answers": [],
+      "areas_needing_attention": []
+    },
+    "conversation_timeline": [],
+    "client_context": {
+      "profile": {
+        "company": "Manufacturing Inc",
+        "industry": "Manufacturing",
+        "size": "Enterprise",
+        "role": "CTO",
+        "pain_points": [
+          "Supply Chain Volatility & Resilience: Managing disruptions from geopolitical events, natural disasters, and supplier issues, including lead times, inventory levels, and ensuring a robust, diversified supplier base.",
+          "Operational Efficiency & Cost Optimization: Balancing high fixed costs, optimizing production processes, reducing waste, and improving overall throughput.",
+          "Talent Acquisition & Retention: Attracting and retaining skilled labor, including engineers, technicians, and experienced operators, especially with the rise of automation and advanced manufacturing.",
+          "Technology Adoption & Integration: Implementing and integrating Industry 4.0 technologies (AI, IoT, Big Data, automation, cloud) to enhance efficiency, flexibility, and data-driven decision-making, while managing legacy systems.",
+          "Quality Control & Compliance: Maintaining high product quality standards, meeting stringent industry regulations, and ensuring product traceability.",
+          "Sustainability & ESG Pressures: Meeting environmental regulations, reducing carbon footprint, and addressing investor and consumer demands for sustainable practices.",
+          "Market Agility & Customization: Responding to rapidly changing market demands, customer preferences, and the need for more customized production."
+        ],
+        "decision_criteria": [
+          "Return on Investment (ROI) & Total Cost of Ownership (TCO): Quantifiable benefits, payback periods, and long-term cost savings are critical.",
+          "Operational Efficiency Gains: Improvements in throughput, yield, waste reduction, and energy consumption.",
+          "Scalability & Flexibility: Ability to adapt to changing production volumes, product mixes, and future technological advancements.",
+          "Reliability & Uptime: Ensuring minimal disruption to production lines and consistent performance.",
+          "Integration Capabilities: Seamless integration with existing ERP, MES, PLM, and other critical systems.",
+          "Security & Data Integrity: Robust cybersecurity measures and protection of sensitive manufacturing data.",
+          "Supplier Reputation & Support: Proven track record, reliable support, and long-term partnership potential.",
+          "Compliance & Regulatory Adherence: Meeting industry-specific standards and government regulations."
+        ],
+        "technical_requirements": [
+          "Integration with existing ERP, MES, SCADA, PLM systems.",
+          "IoT connectivity for sensor data collection and machine monitoring.",
+          "Advanced analytics and AI for predictive maintenance, quality control, and process optimization.",
+          "Automation and robotics for repetitive tasks and improved safety.",
+          "Cloud-based solutions for data storage, processing, and accessibility.",
+          "Cybersecurity features to protect operational technology (OT) and IT infrastructure.",
+          "Real-time data visualization and reporting dashboards."
+        ],
+        "compliance_needs": [
+          "Industry-specific quality standards (e.g., ISO 9001, AS9100 for aerospace, IATF 16949 for automotive).",
+          "Environmental regulations (e.g., EPA standards, emissions controls).",
+          "Safety regulations (e.g., OSHA).",
+          "Product-specific certifications and traceability requirements.",
+          "Data privacy and security regulations (e.g., GDPR, CCPA if applicable)."
+        ]
+      },
+      "product_evaluated": {
+        "name": "CloudPlatform Pro",
+        "vendor": "TechCorp",
+        "key_features": [],
+        "competitors": [],
+        "value_props": []
+      }
+    },
+    "recommendations": [
+      "Address 3 unanswered critical questions in follow-up",
+      "Focus on uncovered important areas: pricing, competitors, roi_value"
+    ]
+  },
+  "session_quality_assessment": {
+    "overall_rating": "Poor",
+    "conversation_flow": {
+      "rating": "Poor",
+      "details": "No exchanges"
+    },
+    "client_engagement": {
+      "rating": "Poor",
+      "details": "No data"
+    },
+    "technical_performance": {
+      "rating": "Good",
+      "error_count": 0,
+      "average_processing_time": 0,
+      "whisper_integration": "Stable",
+      "agent_integration": "Stable"
+    }
+  },
+  "system_stats": {
+    "whisper_chunks_processed": 0,
+    "client_responses_generated": 0,
+    "total_session_duration": 32.19673275947571,
+    "whisper_stats": {
+      "chunks_processed": 7,
+      "average_processing_time": 0.32394548824855257,
+      "min_processing_time": 0.06201434135437012,
+      "max_processing_time": 0.7494313716888428,
+      "total_chunks": 6,
+      "is_recording": false,
+      "model_size": "base"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+# Whisper and Audio Processing Dependencies
+openai-whisper>=20231117
+torch>=1.13.0
+torchaudio>=0.13.0
+
+# Audio processing
+pyaudio>=0.2.11
+numpy>=1.21.0
+scipy>=1.7.0
+
+# Additional utilities that might be needed
+requests>=2.25.0
+aiofiles>=0.7.0
+
+# Optional: For better performance
+# torch[cuda] - if you have NVIDIA GPU
+# ffmpeg-python - for additional audio format support
+
+# Note: You may need to install system dependencies:
+# 
+# On Ubuntu/Debian:
+# sudo apt update
+# sudo apt install ffmpeg portaudio19-dev python3-dev
+#
+# On macOS:
+# brew install ffmpeg portaudio
+#
+# On Windows:
+# Install ffmpeg from https://ffmpeg.org/download.html
+# PyAudio wheels should install automatically

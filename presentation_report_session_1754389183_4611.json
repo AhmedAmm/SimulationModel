@@ -1,0 +1,486 @@
+{
+  "session_summary": {
+    "session_id": "session_1754389183_4611",
+    "start_time": 1754389183.8063319,
+    "end_time": 1754389509.0605242,
+    "start_datetime": "2025-08-05T11:19:43.806332",
+    "end_datetime": "2025-08-05T11:25:09.060524",
+    "duration_minutes": 5.420903205871582,
+    "total_exchanges": 2,
+    "session_state": "active"
+  },
+  "participants": {
+    "client_profile": {
+      "company": "Manufacturing Inc",
+      "industry": "Manufacturing",
+      "size": "Enterprise",
+      "role": "CTO",
+      "timeline": "Typically long, involving extensive research, vendor evaluation, pilot projects, and phased implementations. Decision-making processes can be complex due to multiple stakeholders and significant capital outlay. Evaluation timelines can range from several months to over a year for major enterprise-wide solutions.",
+      "budget_range": "Generally high, reflecting capital-intensive operations and significant investments in technology, infrastructure, and skilled labor. Budgets are often project-specific and can range from hundreds of thousands to millions of dollars for major system upgrades or new implementations."
+    },
+    "product_context": {
+      "name": "CloudPlatform Pro",
+      "vendor": "TechCorp",
+      "category": "Enterprise Software",
+      "pricing_model": null
+    }
+  },
+  "conversation_exchanges": [
+    {
+      "id": "exchange_1",
+      "timestamp": 1754389211.4056144,
+      "datetime": "2025-08-05T11:20:11.405614",
+      "salesperson_speech": "Good morning! thank you for taking the time to meet with us today.",
+      "client_response": "Good morning to you as well. I appreciate you coming in. As CTO of Manufacturing Inc., my primary focus is ensuring any technological investment drives tangible improvements in our operational efficiency and ultimately, our bottom line. Given the competitive landscape of cloud providers, and our significant reliance on robust, scalable infrastructure to address challenges like aging systems and supply chain volatility, a clear understanding of differentiated value is crucial. Therefore, before we delve deeper, I need to understand **how does CloudPlatform Pro specifically differentiate from Amazon Web Services (AWS), Microsoft Azure in terms of Return on Investment (ROI) and Cost Savings, Operational Efficiency Gains (productivity, throughput, reduced downtime)?**",
+      "response_time_seconds": 25.592019081115723,
+      "meeting_stage": "opening",
+      "quality_metrics": {
+        "input_length": 66,
+        "response_length": 774,
+        "input_word_count": 13,
+        "response_word_count": 108,
+        "has_question": true,
+        "response_complexity": 18
+      },
+      "whisper_chunks": [
+        {
+          "chunk_id": "chunk_1754389183_5218",
+          "timestamp": 1754389183.806753,
+          "text": "Good morning! Thank you for taking the time to meet with us today.",
+          "confidence": 0.95,
+          "speaker_id": "salesperson"
+        },
+        {
+          "chunk_id": "chunk_1754389188_775",
+          "timestamp": 1754389188.8067608,
+          "text": "I'm excited to show you how CloudPlatform Pro can revolutionize",
+          "confidence": 0.9,
+          "speaker_id": "salesperson"
+        },
+        {
+          "chunk_id": "chunk_1754389193_7164",
+          "timestamp": 1754389193.8067634,
+          "text": "your manufacturing operations with our advanced cloud infrastructure.",
+          "confidence": 0.88,
+          "speaker_id": "salesperson"
+        },
+        {
+          "chunk_id": "chunk_1754389198_1322",
+          "timestamp": 1754389198.8067646,
+          "text": "We've specifically designed this platform for enterprises like yours",
+          "confidence": 0.92,
+          "speaker_id": "salesperson"
+        },
+        {
+          "chunk_id": "chunk_1754389203_5628",
+          "timestamp": 1754389203.8067653,
+          "text": "with real-time analytics and 99.99% uptime guarantee.",
+          "confidence": 0.87,
+          "speaker_id": "salesperson"
+        }
+      ]
+    },
+    {
+      "id": "exchange_2",
+      "timestamp": 1754389500.0513504,
+      "datetime": "2025-08-05T11:25:00.051350",
+      "salesperson_speech": "What are your biggest challenges with your current it infrastructure?",
+      "client_response": "That's a fair question. Our biggest challenges are deeply rooted in our **aging infrastructure and legacy systems**, which are causing significant bottlenecks and increasing maintenance costs. We're also wrestling with **supply chain disruptions** and the need for greater **operational efficiency** across the board. Before we can even consider how CloudPlatform Pro might address these, I need to understand its tangible impact. To that end, **what specific ROI metrics and timeframes can you provide for Enterprise Manufacturing companies, and how do you measure success against our current ERP systems (SAP, Oracle, Microsoft Dynamics)?**",
+      "response_time_seconds": 286.20299220085144,
+      "meeting_stage": "discovery",
+      "quality_metrics": {
+        "input_length": 69,
+        "response_length": 642,
+        "input_word_count": 10,
+        "response_word_count": 92,
+        "has_question": true,
+        "response_complexity": 12
+      },
+      "whisper_chunks": [
+        {
+          "chunk_id": "chunk_1754389208_7359",
+          "timestamp": 1754389208.8067663,
+          "text": "What are your biggest challenges with your current IT infrastructure?",
+          "confidence": 0.93,
+          "speaker_id": "salesperson"
+        }
+      ]
+    }
+  ],
+  "technical_metrics": {
+    "whisper_processing": {
+      "total_chunks_received": 6,
+      "chunks_per_exchange": 3.0,
+      "average_chunk_length": 64.66666666666667
+    },
+    "response_performance": {
+      "average_response_time": 155.89750564098358,
+      "response_times": [
+        25.592019081115723,
+        286.20299220085144
+      ],
+      "processing_errors": []
+    },
+    "orchestrator_config": {
+      "silence_threshold": 2.0,
+      "fastapi_base_url": "http://localhost:8000"
+    }
+  },
+  "sales_analysis": {
+    "session_overview": {
+      "session_info": {
+        "initialized": true,
+        "meeting_stage": "discovery",
+        "rag_system_active": true,
+        "fastapi_base_url": "http://localhost:8000"
+      },
+      "client_profile": {
+        "company": "Manufacturing Inc",
+        "industry": "Manufacturing",
+        "size": "Enterprise",
+        "role": "CTO",
+        "timeline": "Typically long, involving extensive research, vendor evaluation, pilot projects, and phased implementations. Decision-making processes can be complex due to multiple stakeholders and significant capital outlay. Evaluation timelines can range from several months to over a year for major enterprise-wide solutions.",
+        "budget_range": "Generally high, reflecting capital-intensive operations and significant investments in technology, infrastructure, and skilled labor. Budgets are often project-specific and can range from hundreds of thousands to millions of dollars for major system upgrades or new implementations."
+      },
+      "product_context": {
+        "name": "CloudPlatform Pro",
+        "vendor": "TechCorp",
+        "category": "Enterprise Software",
+        "pricing_model": null
+      },
+      "question_metrics": {
+        "total_generated": 4,
+        "answered": 0,
+        "remaining": 2,
+        "answer_rate": 0.0,
+        "avg_quality_score": 0
+      },
+      "priority_breakdown": {
+        "critical": {
+          "total": 3,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "high": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "medium": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "low": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        }
+      },
+      "category_breakdown": {
+        "pricing": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "competitors": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "product_features": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "company_reputation": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "technical_specs": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "support_service": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "implementation": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "roi_value": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "security_compliance": {
+          "total": 1,
+          "answered": 0,
+          "percentage": 0.0
+        },
+        "integration": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "case_studies": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "scalability": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "customization": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        },
+        "vendor_stability": {
+          "total": 0,
+          "answered": 0,
+          "percentage": 0
+        }
+      },
+      "conversation_metrics": {
+        "total_exchanges": 4,
+        "duration_minutes": 5.387443335851033
+      },
+      "meeting_assessment": {
+        "should_end": false,
+        "completion_percentage": 0.0,
+        "meeting_quality": "Needs Improvement"
+      }
+    },
+    "detailed_analysis": {
+      "questions_by_priority": {
+        "critical": [
+          {
+            "id": "5e4b4fc8",
+            "text": "How does CloudPlatform Pro specifically differentiate from Amazon Web Services (AWS), Microsoft Azure in terms of Return on Investment (ROI) and Cost Savings, Operational Efficiency Gains (productivity, throughput, reduced downtime)?",
+            "category": "competitors",
+            "answered": false,
+            "quality_score": 0.0,
+            "business_rationale": "Critical for CTO to justify vendor selection"
+          },
+          {
+            "id": "95c78741",
+            "text": "What specific ROI metrics and timeframes can you provide for Enterprise Manufacturing companies, and how do you measure success against our current ERP systems (SAP, Oracle, Microsoft Dynamics)?",
+            "category": "roi_value",
+            "answered": false,
+            "quality_score": 0.0,
+            "business_rationale": "Essential for business case development and stakeholder buy-in"
+          },
+          {
+            "id": "fe585c92",
+            "text": "How does TechCorp ensure compliance with Environmental Regulations (e.g., emissions standards, waste management), Safety Standards (e.g., OSHA, industry-specific safety protocols) and what security certifications do you maintain relevant to Manufacturing sector?",
+            "category": "security_compliance",
+            "answered": false,
+            "quality_score": 0.0,
+            "business_rationale": "Mandatory for risk management and regulatory compliance"
+          }
+        ],
+        "high": [
+          {
+            "id": "6dcddacc",
+            "text": "Given our Enterprise scale and Industry 4.0 technologies (IoT, AI, Big Data Analytics, Cloud Computing, Automation), Advanced Automation and Robotics, what are the specific implementation challenges and resource requirements we should anticipate?",
+            "category": "implementation",
+            "answered": false,
+            "quality_score": 0.0,
+            "business_rationale": "Critical for project planning and resource allocation"
+          }
+        ],
+        "medium": [],
+        "low": []
+      },
+      "questions_by_category": {
+        "pricing": [],
+        "competitors": [
+          {
+            "id": "5e4b4fc8",
+            "text": "How does CloudPlatform Pro specifically differentiate from Amazon Web Services (AWS), Microsoft Azure in terms of Return on Investment (ROI) and Cost Savings, Operational Efficiency Gains (productivity, throughput, reduced downtime)?",
+            "priority": "critical",
+            "answered": false,
+            "quality_score": 0.0
+          }
+        ],
+        "product_features": [],
+        "company_reputation": [],
+        "technical_specs": [],
+        "support_service": [],
+        "implementation": [
+          {
+            "id": "6dcddacc",
+            "text": "Given our Enterprise scale and Industry 4.0 technologies (IoT, AI, Big Data Analytics, Cloud Computing, Automation), Advanced Automation and Robotics, what are the specific implementation challenges and resource requirements we should anticipate?",
+            "priority": "high",
+            "answered": false,
+            "quality_score": 0.0
+          }
+        ],
+        "roi_value": [
+          {
+            "id": "95c78741",
+            "text": "What specific ROI metrics and timeframes can you provide for Enterprise Manufacturing companies, and how do you measure success against our current ERP systems (SAP, Oracle, Microsoft Dynamics)?",
+            "priority": "critical",
+            "answered": false,
+            "quality_score": 0.0
+          }
+        ],
+        "security_compliance": [
+          {
+            "id": "fe585c92",
+            "text": "How does TechCorp ensure compliance with Environmental Regulations (e.g., emissions standards, waste management), Safety Standards (e.g., OSHA, industry-specific safety protocols) and what security certifications do you maintain relevant to Manufacturing sector?",
+            "priority": "critical",
+            "answered": false,
+            "quality_score": 0.0
+          }
+        ],
+        "integration": [],
+        "case_studies": [],
+        "scalability": [],
+        "customization": [],
+        "vendor_stability": []
+      },
+      "unanswered_critical": [
+        {
+          "text": "How does CloudPlatform Pro specifically differentiate from Amazon Web Services (AWS), Microsoft Azure in terms of Return on Investment (ROI) and Cost Savings, Operational Efficiency Gains (productivity, throughput, reduced downtime)?",
+          "category": "competitors",
+          "business_rationale": "Critical for CTO to justify vendor selection",
+          "expected_answer_type": "Specific feature and value comparisons"
+        },
+        {
+          "text": "What specific ROI metrics and timeframes can you provide for Enterprise Manufacturing companies, and how do you measure success against our current ERP systems (SAP, Oracle, Microsoft Dynamics)?",
+          "category": "roi_value",
+          "business_rationale": "Essential for business case development and stakeholder buy-in",
+          "expected_answer_type": "Quantifiable metrics with industry benchmarks"
+        },
+        {
+          "text": "How does TechCorp ensure compliance with Environmental Regulations (e.g., emissions standards, waste management), Safety Standards (e.g., OSHA, industry-specific safety protocols) and what security certifications do you maintain relevant to Manufacturing sector?",
+          "category": "security_compliance",
+          "business_rationale": "Mandatory for risk management and regulatory compliance",
+          "expected_answer_type": "Specific certifications and compliance documentation"
+        }
+      ],
+      "top_quality_answers": [],
+      "areas_needing_attention": []
+    },
+    "conversation_timeline": [
+      {
+        "timestamp": 1754389185.8139951,
+        "role": "salesperson",
+        "content": "Good morning! thank you for taking the time to meet with us today.",
+        "meeting_stage": "unknown"
+      },
+      {
+        "timestamp": 1754389211.4056058,
+        "role": "client",
+        "content": "Good morning to you as well. I appreciate you coming in. As CTO of Manufacturing Inc., my primary fo...",
+        "meeting_stage": "opening"
+      },
+      {
+        "timestamp": 1754389213.8484595,
+        "role": "salesperson",
+        "content": "What are your biggest challenges with your current it infrastructure?",
+        "meeting_stage": "unknown"
+      },
+      {
+        "timestamp": 1754389500.0513434,
+        "role": "client",
+        "content": "That's a fair question. Our biggest challenges are deeply rooted in our **aging infrastructure and l...",
+        "meeting_stage": "discovery"
+      }
+    ],
+    "client_context": {
+      "profile": {
+        "company": "Manufacturing Inc",
+        "industry": "Manufacturing",
+        "size": "Enterprise",
+        "role": "CTO",
+        "pain_points": [
+          "Aging Infrastructure & Legacy Systems (outdated machinery, ERP systems, automation leading to bottlenecks, increased maintenance costs, limited scalability)",
+          "Supply Chain Disruptions (volatility in raw material availability, geopolitical factors, logistics challenges impacting production schedules and costs)",
+          "Labor Shortages & Skill Gaps (difficulty finding and retaining skilled labor for advanced manufacturing processes)",
+          "Quality Control & Consistency (maintaining high product quality and consistency across large-scale production)",
+          "Cost Optimization & Profitability (pressure to reduce operational costs, increase output, and improve profit margins)",
+          "Data Management & Utilization (challenges in collecting, analyzing, and acting upon vast amounts of operational data)",
+          "Sustainability & Environmental Regulations (meeting growing demands for eco-friendly practices and adhering to environmental compliance)",
+          "Integration of New Technologies (seamlessly incorporating Industry 4.0 technologies like IoT, AI, and automation into existing workflows)"
+        ],
+        "decision_criteria": [
+          "Return on Investment (ROI) and Cost Savings",
+          "Operational Efficiency Gains (productivity, throughput, reduced downtime)",
+          "Scalability and Future-Proofing of Solutions",
+          "Integration Capabilities with Existing Systems",
+          "Reliability and Performance",
+          "Vendor Reputation and Support",
+          "Security and Data Integrity",
+          "Compliance with Industry Standards and Regulations"
+        ],
+        "technical_requirements": [
+          "Industry 4.0 technologies (IoT, AI, Big Data Analytics, Cloud Computing, Automation)",
+          "Advanced Automation and Robotics",
+          "Predictive Maintenance capabilities",
+          "Real-time data monitoring and analytics platforms",
+          "Integration with existing ERP and MES systems",
+          "Cybersecurity for connected systems",
+          "Digital Twins and Simulation tools",
+          "Supply Chain Visibility and Management Software"
+        ],
+        "compliance_needs": [
+          "Environmental Regulations (e.g., emissions standards, waste management)",
+          "Safety Standards (e.g., OSHA, industry-specific safety protocols)",
+          "Quality Certifications (e.g., ISO 9001, industry-specific quality standards)",
+          "Data Privacy and Security regulations",
+          "Industry-specific product compliance (e.g., FDA for medical devices, automotive standards)"
+        ]
+      },
+      "product_evaluated": {
+        "name": "CloudPlatform Pro",
+        "vendor": "TechCorp",
+        "key_features": [
+          "Unified Cloud Management (private, public, hybrid cloud infrastructure)",
+          "Self-Service Portal"
+        ],
+        "competitors": [
+          "Amazon Web Services (AWS)",
+          "Microsoft Azure",
+          "Google Cloud Platform (GCP)"
+        ],
+        "value_props": []
+      }
+    },
+    "recommendations": [
+      "Address 3 unanswered critical questions in follow-up",
+      "Focus on uncovered important areas: pricing, competitors, roi_value"
+    ]
+  },
+  "session_quality_assessment": {
+    "overall_rating": "Poor",
+    "conversation_flow": {
+      "rating": "Fair",
+      "average_exchange_gap_seconds": 288.6457359790802,
+      "total_exchanges": 2,
+      "conversation_rhythm": "Variable"
+    },
+    "client_engagement": {
+      "rating": "Medium",
+      "average_response_length": 708.0,
+      "questions_asked": 2,
+      "engagement_level": "Active"
+    },
+    "technical_performance": {
+      "rating": "Good",
+      "error_count": 0,
+      "average_processing_time": 155.89750564098358,
+      "whisper_integration": "Stable",
+      "agent_integration": "Stable"
+    }
+  }
+}
