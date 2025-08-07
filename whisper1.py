@@ -406,7 +406,7 @@ async def example_integration():
     
     # Set up Whisper callbacks to feed orchestrator
     def on_whisper_chunk(chunk: WhisperChunk):
-        print(f"🎙️ Transcribed: '{chunk.text[:50]}...'")
+        # print(f"🎙️ Transcribed: '{chunk.text[:50]}...'")
         # Send chunk to orchestrator asynchronously
         asyncio.create_task(orchestrator.process_whisper_chunk(chunk))
     
@@ -450,14 +450,14 @@ async def example_integration():
                 # Optionally print stats every 30 seconds
                 if int(time.time()) % 30 == 0:
                     stats = whisper_processor.get_stats()
-                    print(f"📈 Stats: {stats['chunks_processed']} chunks, "
-                          f"avg {stats.get('average_processing_time', 0):.2f}s processing time")
+                    # print(f"📈 Stats: {stats['chunks_processed']} chunks, "
+                    #       f"avg {stats.get('average_processing_time', 0):.2f}s processing time")
         
         except KeyboardInterrupt:
             print("\n🛑 Stopping...")
         
         finally:
-            # Cleanup
+            # Cleanup93
             whisper_processor.stop_recording()
             final_report = await orchestrator.end_session()
             whisper_processor.cleanup()
