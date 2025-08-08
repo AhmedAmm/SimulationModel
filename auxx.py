@@ -179,44 +179,46 @@ class StreamingWhisperTranscriber:
             try:
                 # Get audio chunk from queue (with timeout)
                 audio_chunk = self.processing_queue.get(timeout=1.0)
-                
-                # Check for silence
-                if self._is_silence(audio_chunk):
-                    self.silence_counter += 1
-                    if self.silence_counter >= self.max_silence_chunks:
-                        # End of sentence/phrase - add newline if needed
-                        if self.full_transcription and not self.full_transcription.endswith(('.', '!', '?', '\n')):
-                            self.full_transcription += '.'
-                            sys.stdout.write('.\n')
-                            sys.stdout.flush()
-                    continue
-                else:
-                    self.silence_counter = 0
-                
-                # Transcribe audio chunk (ensure float32 dtype)
-                audio_chunk = audio_chunk.astype(np.float32)
-                result = self.model.transcribe(
-                    audio_chunk,
-                    task="transcribe",
-                    no_speech_threshold=0.3,  # Lower threshold for better sensitivity
-                    logprob_threshold=-1.0,
-                    compression_ratio_threshold=2.4,
-                    language="en",  # Force English transcription only
-                    fp16=torch.cuda.is_available()  # Use fp16 if CUDA available
-                )
-                
-                # Clean and process transcription
-                new_text = self._clean_text(result["text"])
-                
-                if new_text and new_text != self.last_chunk_text:
-                    # Avoid repetition of the same chunk
-                    if not (self.full_transcription.endswith(new_text) or 
-                           new_text in self.full_transcription.split()[-5:]):  # Check last 5 words
-                        self._update_streaming_display(new_text)
-                        self.last_chunk_text = new_text
-                
-                self.processing_queue.task_done()
-                
+                try:
+                    # Check for silence
+                    if self._is_silence(audio_chunk):
+                        self.silence_counter += 1
+                        if self.silence_counter >= self.max_silence_chunks:
+                            if hasattr(self, 'orchestrator'):
+                                self.orchestrator.notify_silence()
+                            if self.full_transcription and not self.full_transcription.endswith(('.', '!', '?', '\n')):
+                                self.full_transcription += '.'
+                                sys.stdout.write('.\n')
+                                sys.stdout.flush()
+                        continue  # still task_done in finally
+                    else:
+                        self.silence_counter = 0
+
+                    # Transcribe audio chunk (ensure float32 dtype)
+                    audio_chunk = audio_chunk.astype(np.float32)
+                    result = self.model.transcribe(
+                        audio_chunk,
+                        task="transcribe",
+                        no_speech_threshold=0.3,
+                        logprob_threshold=-1.0,
+                        compression_ratio_threshold=2.4,
+                        language="en",  # Force English transcription only
+                        fp16=torch.cuda.is_available()
+                    )
+
+                    # Clean and process transcription
+                    new_text = self._clean_text(result["text"])
+
+                    if new_text and new_text != self.last_chunk_text:
+                        # Avoid repetition of the same chunk
+                        if not (self.full_transcription.endswith(new_text) or
+                                new_text in self.full_transcription.split()[-5:]):  # Check last 5 words
+                            self._update_streaming_display(new_text)
+                            self.last_chunk_text = new_text
+                finally:
+                    # Always mark the queue item as done
+                    self.processing_queue.task_done()
+
             except queue.Empty:
                 continue
             except Exception as e:
@@ -340,27 +342,27 @@ class StreamingWhisperTranscriber:
         """Reset audio buffer after processing"""
         self.audio_buffer.clear()
         self.processing_queue = queue.Queue()  # Fresh queue
+    
     def reset_for_new_conversation(self):
-        """Reset all transcription state for fresh conversation"""
         logger.info("🔄 Resetting transcriber state...")
-        
-        # Clear all audio buffers
+
         self.audio_buffer.clear()
-        
-        # Reset transcription state
+        self.processing_queue = queue.Queue()
+
         self.full_transcription = ""
-        self.last_chunk_text = ""
+        self.last_chunk_text = ""   # ✅ Clear last chunk
         self.sentence_buffer = []
         self.silence_counter = 0
-        
-        # Clear processing queue
-        while not self.processing_queue.empty():
-            try:
-                self.processing_queue.get_nowait()
-            except queue.Empty:
-                break
-        
+
+        # ✅ Ensure we don't compare to stale orchestrator text
+        if hasattr(self, 'orchestrator'):
+            self.orchestrator._last_processed_text = ""
+
         logger.info("✅ Transcriber reset complete")
+
+
+
+
 
 
 # Example usage and testing

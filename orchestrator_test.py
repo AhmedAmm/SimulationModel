@@ -67,6 +67,7 @@ class ConversationalOrchestrator:
         # Enhanced sentence tracking
         self.accumulated_sentence = ""  # Keeps building even after timeouts
         self.last_sent_sentence = ""    # Track what was last sent to avoid duplicates
+        self.last_user_sentence = ""
         
         # Conversation history for context
         self.conversation_history = deque(maxlen=conversation_context_limit * 2)
@@ -166,46 +167,42 @@ class ConversationalOrchestrator:
         return simplified_new.startswith(simplified_last) or simplified_last.startswith(simplified_new)
 
     def response_callback(self, new_text: str):
-        """
-        Enhanced callback with duplicate prevention
-        """
         if not self.is_running or self.state != ConversationState.LISTENING:
             return
 
         current_time = time.time()
-        
-        # CRITICAL FIX: Skip if text is identical to last processed
+
         if hasattr(self, '_last_processed_text') and new_text.strip() == self._last_processed_text.strip():
-            logger.debug("🔄 Skipping duplicate text")
             return
-        
-        # Clean text
+
         cleaned_text = self._clean_text(new_text)
         if not cleaned_text:
             return
-        
-        # Store for duplicate detection
+        if cleaned_text.strip().lower() == self.last_user_sentence.strip().lower():
+            logger.info("🛑 Ignored repeated user message.")
+            return
         self._last_processed_text = new_text
-        
-        # Reset buffers for new input
-        self._reset_current_sentence(reset_accumulated=True)
-        
-        # Process new input
+
+        # 🚫 REMOVE: self._reset_current_sentence(reset_accumulated=True)
+
         fragment = SentenceFragment(text=cleaned_text, timestamp=current_time)
         self.sentence_buffer.append(fragment)
-        
+
         self.current_sentence = self._rebuild_current_sentence()
+        self._update_accumulated_sentence()
         self.last_fragment_time = current_time
-        
-        print(f"\r🎙️  {self.current_sentence}", end="", flush=True)
-        
-        # Check completion
+
+        print(f"\r🎙️  {self.accumulated_sentence}", end="", flush=True)
+
         completion_result = self._check_completion_conditions()
         if completion_result['should_complete']:
-            sentence_to_send = completion_result['sentence']
+            sentence_to_send = self.accumulated_sentence
             if sentence_to_send and not self._is_duplicate(sentence_to_send):
                 self.processing_queue.put(sentence_to_send)
                 self.last_sent_sentence = sentence_to_send
+                self.last_user_sentence = sentence_to_send
+            self._reset_current_sentence(reset_accumulated=True)  # reset only after sending
+
     
     def _clean_text(self, text: str) -> str:
         """Enhanced text cleaning"""
@@ -265,89 +262,24 @@ class ConversationalOrchestrator:
     
     def _check_completion_conditions(self) -> dict:
         """
-        Enhanced completion checking with multiple strategies.
-        Returns dict with completion decision and sentence to send.
+        Only complete when silence is detected for sentence_timeout seconds.
         """
         if not self.current_sentence:
             return {'should_complete': False, 'sentence': '', 'reset_accumulated': False}
-        
+
         sentence = self.current_sentence.strip()
         accumulated = self.accumulated_sentence.strip()
         current_time = time.time()
-        
-        # Use the longer accumulated sentence if it's more complete
-        sentence_to_check = accumulated if len(accumulated) > len(sentence) else sentence
-        
-        # Don't send if too short and no clear indicators
-        if len(sentence_to_check) < self.min_sentence_length:
-            return {'should_complete': False, 'sentence': '', 'reset_accumulated': False}
-        
-        # Strategy 1: Explicit sentence endings (high confidence)
-        if self.sentence_endings.search(sentence_to_check):
-            return {
-                'should_complete': True, 
-                'sentence': sentence_to_check,
-                'reset_accumulated': True
-            }
-        
-        # Strategy 2: Conversation enders (high confidence)
-        if self.conversation_enders.search(sentence_to_check):
-            return {
-                'should_complete': True, 
-                'sentence': sentence_to_check,
-                'reset_accumulated': True
-            }
-        
-        # Strategy 3: Questions (medium confidence, shorter timeout)
-        if self._is_question(sentence_to_check):
-            timeout = self.sentence_timeout * 0.8  # Shorter for questions
-            if current_time - self.last_fragment_time > timeout:
-                return {
-                    'should_complete': True, 
-                    'sentence': sentence_to_check,
-                    'reset_accumulated': True
-                }
-        
-        # Strategy 4: Complex queries (math, code, etc.) - longer timeout but eventual completion
-        if self._is_complex_query(sentence_to_check):
-            time_since_start = current_time - self.sentence_start_time
-            silence_time = current_time - self.last_fragment_time
-            
-            # Force completion after extended timeout or significant pause
-            if (time_since_start > self.extended_timeout or 
-                silence_time > self.sentence_timeout * 1.5):
-                return {
-                    'should_complete': True, 
-                    'sentence': sentence_to_check,
-                    'reset_accumulated': True
-                }
-        
-        # Strategy 5: Trigger phrases (medium timeout)
-        if self.trigger_phrases.search(sentence_to_check):
-            if current_time - self.last_fragment_time > self.sentence_timeout * 0.7:
-                return {
-                    'should_complete': True, 
-                    'sentence': sentence_to_check,
-                    'reset_accumulated': True
-                }
-        
-        # Strategy 6: Standard timeout with accumulated sentence preservation
+
         silence_duration = current_time - self.last_fragment_time
         if silence_duration > self.sentence_timeout:
-            # If we have accumulated content that's substantially longer, use it
-            if len(accumulated) > len(sentence) + 5:
+            sentence_to_send = accumulated if len(accumulated) > len(sentence) else sentence
+            if len(sentence_to_send) >= self.min_sentence_length:
                 return {
-                    'should_complete': True, 
-                    'sentence': accumulated,
+                    'should_complete': True,
+                    'sentence': sentence_to_send,
                     'reset_accumulated': True
                 }
-            elif len(sentence_to_check) >= self.min_sentence_length:
-                return {
-                    'should_complete': True, 
-                    'sentence': sentence_to_check,
-                    'reset_accumulated': False  # Keep accumulated for continuation
-                }
-        
         return {'should_complete': False, 'sentence': '', 'reset_accumulated': False}
     
     def _is_question(self, sentence: str) -> bool:
@@ -523,9 +455,9 @@ Response guidelines:
                 response = self.response_queue.get(timeout=1.0)
                 if response is None:
                     break
-                
+
                 self.state = ConversationState.SPEAKING
-                
+
                 try:
                     logger.info("🔊 Speaking...")
                     self.tts_engine.say(response)
@@ -533,12 +465,11 @@ Response guidelines:
                     logger.info("✅ Finished speaking")
                 except Exception as e:
                     logger.error(f"TTS error: {e}")
-                
+
                 finally:
-                    # CRITICAL FIX: Return to listening after speaking
-                    self.state = ConversationState.LISTENING
                     self.response_queue.task_done()
-                
+                    self.resume_listening()  # <-- Add this line
+
             except queue.Empty:
                 continue
             except Exception as e:
@@ -567,6 +498,24 @@ Response guidelines:
             'processing_queue_size': self.processing_queue.qsize(),
             'response_queue_size': self.response_queue.qsize() if self.use_tts else 0
         }
+    def pause_listening(self):
+        """Pause listening (ignore incoming speech fragments) but keep context."""
+        self.state = ConversationState.IDLE
+        logger.info("Listening paused. Context preserved.")
+
+    def resume_listening(self):
+        """Resume listening and continue with preserved context."""
+        self.state = ConversationState.LISTENING
+        logger.info("Listening resumed.")
+    
+    def notify_silence(self):
+        if time.time() - self.last_fragment_time > self.sentence_timeout:
+            if self.current_sentence and len(self.current_sentence) >= self.min_sentence_length:
+                # ✅ Prevent resending same sentence
+                if not self._is_duplicate(self.current_sentence):
+                    self.processing_queue.put(self.current_sentence)
+                    self.last_sent_sentence = self.current_sentence
+
 
 
 # FIXED: Enhanced integration function
@@ -621,86 +570,15 @@ def setup_integrated_conversation_system(
     
     return transcriber, orchestrator
 
-
-def test_enhanced_orchestrator():
-    """Enhanced test function for the improved orchestrator"""
-    print("🧪 Testing Enhanced Conversational Orchestrator...")
-    print("=" * 60)
-    
-    try:
-        llm_client = RotatingGeminiClient(base_cooldown=60)
-    except Exception as e:
-        print(f"❌ Failed to initialize LLM client: {e}")
-        return
-    
-    orchestrator = ConversationalOrchestrator(
-        llm_client=llm_client,
-        use_tts=False,
-        sentence_timeout=6.0,
-        extended_timeout=12.0,
-        min_sentence_length=3
-    )
-    
-    orchestrator.start()
-    
-    # Enhanced test scenarios including math problems
-    test_scenarios = [
-        {
-            "name": "Math Problem - Fragmented",
-            "fragments": ["I have", " x plus", " 2 equal", " to 5", ", find x"],
-            "expected": "Math equation solving"
-        },
-        {
-            "name": "Complex Question",
-            "fragments": ["Can you", " explain how", " to solve", " quadratic", " equations?"],
-            "expected": "Educational explanation"
-        },
-        {
-            "name": "Code Request",
-            "fragments": ["Write a", " python function", " that calculates", " factorial"],
-            "expected": "Code generation"
-        },
-        {
-            "name": "Interrupted Speech",
-            "fragments": ["Hello can you", " answer me about", " the question", "?", " Question I have"],
-            "expected": "Proper handling of interruptions"
-        }
-    ]
-    
-    def simulate_speech_fragments(fragments, delay=0.4):
-        for fragment in fragments:
-            time.sleep(delay)
-            orchestrator.response_callback(fragment)
-        time.sleep(orchestrator.sentence_timeout + 1.0)
-    
-    for i, scenario in enumerate(test_scenarios, 1):
-        print(f"\n🔍 Test {i}: {scenario['name']}")
-        print("-" * 40)
-        
-        simulate_speech_fragments(scenario['fragments'])
-        time.sleep(3.0)
-        
-        status = orchestrator.get_status()
-        print(f"✅ Test completed. Accumulated: '{status['accumulated_sentence']}'")
-    
-    print(f"\n📊 Final Status: {orchestrator.get_status()}")
-    print(f"📜 Conversation History:")
-    for entry in orchestrator.get_conversation_history():
-        print(f"  {entry}")
-    
-    orchestrator.stop()
-    print("\n✅ Enhanced test completed!")
-
-
 if __name__ == "__main__":
     try:
         transcriber, orchestrator = setup_integrated_conversation_system(
             whisper_model_name="base",
             use_tts=True,
-            sentence_timeout=6.0,
+            sentence_timeout=4.0,
             extended_timeout=12.0
         )
-
+        transcriber.orchestrator = orchestrator  
         orchestrator.start()
         transcriber.start_transcription()
 
