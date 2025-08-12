@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import time
 import httpx
+from Llm import llm  # Import the llm module
 
 
 class QuestionPriority(Enum):
@@ -30,6 +31,7 @@ class QuestionCategory(Enum):
     SCALABILITY = "scalability"
     CUSTOMIZATION = "customization"
     VENDOR_STABILITY = "vendor_stability"
+    PERFORMANCE = 'Performance & Reliability'
     OTHER = "other"
 
 
@@ -104,6 +106,9 @@ class ClientSimulationAgent:
         self.meeting_stage = "opening"  # opening, discovery, presentation, objection_handling, closing
         self.comprehensive_context: Dict[str, Any] = {}
         
+        # Store all RAG context locally after initialization
+        self.stored_context: str = ""
+        
         # Configure timeout settings
         self.timeout_config = httpx.Timeout(
             connect=30.0,    # Connection timeout
@@ -111,6 +116,30 @@ class ClientSimulationAgent:
             write=30.0,      # Write timeout
             pool=30.0        # Pool timeout
         )
+        
+        # Dynamic question templates based on keywords
+        self.dynamic_question_templates = {
+            "pricing": [
+                ("What specific pricing models do you offer for {company_size} {industry} companies?", QuestionCategory.PRICING, QuestionPriority.HIGH),
+                ("Can you provide a detailed cost breakdown for the first year?", QuestionCategory.PRICING, QuestionPriority.HIGH),
+            ],
+            "integration": [
+                ("How does {product_name} integrate with our existing {current_solution} systems?", QuestionCategory.INTEGRATION, QuestionPriority.HIGH),
+                ("What APIs are available for custom integrations?", QuestionCategory.INTEGRATION, QuestionPriority.MEDIUM),
+            ],
+            "security": [
+                ("What security certifications does {vendor} maintain for {industry} compliance?", QuestionCategory.SECURITY_COMPLIANCE, QuestionPriority.CRITICAL),
+                ("How do you handle data encryption and access controls?", QuestionCategory.SECURITY_COMPLIANCE, QuestionPriority.HIGH),
+            ],
+            "support": [
+                ("What support levels are available for {company_size} customers?", QuestionCategory.SUPPORT_SERVICE, QuestionPriority.MEDIUM),
+                ("What are your typical response times for critical issues?", QuestionCategory.SUPPORT_SERVICE, QuestionPriority.HIGH),
+            ],
+            "implementation": [
+                ("What's the typical implementation timeline for {company_size} {industry} companies?", QuestionCategory.IMPLEMENTATION, QuestionPriority.HIGH),
+                ("What resources would we need to dedicate during implementation?", QuestionCategory.IMPLEMENTATION, QuestionPriority.MEDIUM),
+            ]
+        }
         
     async def initialize_rag(self) -> bool:
         """Initialize the RAG system via FastAPI"""
@@ -156,7 +185,7 @@ class ClientSimulationAgent:
             print(f"Error connecting to RAG service for cleanup: {e}")
     
     async def query_rag(self, question: str, output_format: str = None) -> str:
-        """Query the RAG system via FastAPI with enhanced context"""
+        """Query the RAG system via FastAPI with enhanced context - ONLY during initialization"""
         if not self.rag_initialized:
             return "RAG system not initialized"
         
@@ -219,7 +248,7 @@ class ClientSimulationAgent:
             if not await self.initialize_rag():
                 return False
         
-        # Build comprehensive context first
+        # Build comprehensive context first - THIS IS THE ONLY TIME WE CALL RAG
         await self._build_comprehensive_context(user_company, user_product, client_company, 
                                                client_role, client_industry, company_size, 
                                                additional_context or {})
@@ -243,7 +272,7 @@ class ClientSimulationAgent:
                                           client_company: str, client_role: str,
                                           client_industry: str, company_size: str,
                                           additional_context: Dict[str, Any]):
-        """Build comprehensive context through detailed RAG queries"""
+        """Build comprehensive context through detailed RAG queries - ONLY CALLED DURING INITIALIZATION"""
         
         # Detailed context queries
         context_queries = {
@@ -267,18 +296,24 @@ class ClientSimulationAgent:
         # Execute all context queries with error handling
         print("Building comprehensive context...")
         context_data = {}
+        context_parts = []
+        
         for category, query in context_queries.items():
             try:
                 print(f"  Analyzing: {category}")
                 result = await self.query_rag(query)
                 context_data[category] = result
+                context_parts.append(f"{category.upper()}:\n{result}\n")
                 # Add small delay to avoid overwhelming the service
                 await asyncio.sleep(0.5)
             except Exception as e:
                 print(f"  Warning: Failed to analyze {category}: {str(e)}")
                 context_data[category] = f"Context unavailable: {str(e)}"
+                context_parts.append(f"{category.upper()}:\nContext unavailable: {str(e)}\n")
         
         self.comprehensive_context = context_data
+        # Store all context as a single string for use with llm.ask_gemini()
+        self.stored_context = "\n".join(context_parts)
         
         # Extract structured information to build profiles
         await self._extract_structured_profiles(context_data, user_company, user_product, 
@@ -372,7 +407,7 @@ class ClientSimulationAgent:
         )
     
     async def _generate_enhanced_initial_questions(self):
-        """Generate highly detailed, context-aware initial questions"""
+        """Generate highly detailed, context-aware initial questions using RAG"""
         
         enhanced_prompt = f"""
         You are simulating a sophisticated {self.client_profile.role} from {self.client_profile.company_name}, 
@@ -386,55 +421,21 @@ class ClientSimulationAgent:
         - Budget Considerations: {self.client_profile.budget_range}
         - Timeline: {self.client_profile.timeline}
         - Current Solutions: {', '.join(self.client_profile.current_solutions) if self.client_profile.current_solutions else 'Legacy systems'}
-        - Decision Criteria: {', '.join(self.client_profile.decision_criteria) if self.client_profile.decision_criteria else 'ROI, functionality, support'}
-        - Technical Requirements: {', '.join(self.client_profile.technical_requirements) if self.client_profile.technical_requirements else 'Standard enterprise requirements'}
-        - Compliance Needs: {', '.join(self.client_profile.compliance_needs) if self.client_profile.compliance_needs else 'Industry standard compliance'}
         
-        PRODUCT/VENDOR CONTEXT:
-        - Product: {self.product_context.name} by {self.product_context.vendor}
-        - Key Features: {', '.join(self.product_context.key_features) if self.product_context.key_features else 'Core functionality'}
-        - Main Competitors: {', '.join(self.product_context.main_competitors) if self.product_context.main_competitors else 'Market alternatives'}
-        - Pricing Model: {self.product_context.pricing_model}
-        - Target Market: {', '.join(self.product_context.target_market) if self.product_context.target_market else 'Enterprise clients'}
+        Generate 12-15 highly specific questions as JSON array. Use only these categories:
+        "pricing", "competitors", "product_features", "company_reputation", "technical_specs", 
+        "support_service", "implementation", "roi_value", "security_compliance", "integration", 
+        "case_studies", "scalability", "customization", "vendor_stability", "Performance & Reliability", "other"
         
-        COMPREHENSIVE MARKET INTELLIGENCE:
-        Vendor Analysis: {self.comprehensive_context.get('vendor_analysis', '')[:500]}...
-        Product Details: {self.comprehensive_context.get('product_deep_dive', '')[:500]}...
-        Competitive Landscape: {self.comprehensive_context.get('competitive_landscape', '')[:500]}...
-        Industry Context: {self.comprehensive_context.get('industry_context', '')[:500]}...
-        
-        Generate 12-15 highly specific, detailed questions that this sophisticated client would ask. Each question should:
-        1. Be specific to the client's industry, company size, and role
-        2. Reference specific business challenges or requirements
-        3. Show deep understanding of the market and competitive landscape
-        4. Include specific details that demonstrate research and preparation
-        5. Address real business concerns and decision criteria
-        6. Be sophisticated enough for a {self.client_profile.role} at a {self.client_profile.company_size} company
-        
-        Question categories to cover:
-        - Competitive differentiation (specific competitor comparisons)
-        - ROI and value quantification (specific metrics and timeframes)
-        - Technical architecture and scalability
-        - Implementation complexity and resource requirements
-        - Integration with existing systems
-        - Security and compliance (industry-specific)
-        - Vendor stability and roadmap
-        - Support and service levels
-        - Pricing and contract terms
-        - Case studies and references (industry-specific)
-        - Risk mitigation and contingency planning
-        - Customization and flexibility
-        
-        Format as JSON array:
         [
             {{
-                "text": "Highly detailed, specific question with business context...",
+                "text": "Detailed question...",
                 "category": "category_name",
                 "priority": "critical|high|medium|low",
-                "context_needed": ["specific context area 1", "specific context area 2"],
+                "context_needed": ["context1", "context2"],
                 "follow_up_triggers": ["keyword1", "keyword2"],
-                "business_rationale": "Why this question is critical for the client's decision",
-                "expected_answer_type": "What kind of answer the client is looking for"
+                "business_rationale": "Why this matters",
+                "expected_answer_type": "What answer expected"
             }}
         ]
         """
@@ -453,10 +454,17 @@ class ClientSimulationAgent:
             
             # Convert to enhanced Question objects
             for q_data in questions_data:
+                try:
+                    category = QuestionCategory(q_data["category"])
+                except ValueError:
+                    # If the category is not valid, use OTHER as a fallback
+                    category = QuestionCategory.OTHER
+                    print(f"Warning: Invalid question category '{q_data['category']}', using OTHER instead")
+                
                 question = Question(
                     id="",
                     text=q_data["text"],
-                    category=QuestionCategory(q_data["category"]),
+                    category=category,
                     priority=QuestionPriority(q_data["priority"]),
                     context_needed=q_data["context_needed"],
                     follow_up_triggers=q_data.get("follow_up_triggers", []),
@@ -478,101 +486,69 @@ class ClientSimulationAgent:
     async def _add_enhanced_fallback_questions(self):
         """Add sophisticated fallback questions if generation fails"""
         fallback_questions = [
-            Question("", f"How does {self.product_context.name} specifically differentiate from {', '.join(self.product_context.main_competitors[:2]) if self.product_context.main_competitors else 'leading competitors'} in terms of {', '.join(self.client_profile.decision_criteria[:2]) if self.client_profile.decision_criteria else 'functionality and ROI'}?", 
+            Question("", f"How does {self.product_context.name} specifically differentiate from {', '.join(self.product_context.main_competitors[:2]) if self.product_context.main_competitors else 'leading competitors'}?", 
                     QuestionCategory.COMPETITORS, QuestionPriority.CRITICAL, 
                     ["competitive analysis", "differentiation"], ["competitors", "differentiation"],
                     f"Critical for {self.client_profile.role} to justify vendor selection", "Specific feature and value comparisons"),
             
-            Question("", f"What specific ROI metrics and timeframes can you provide for {self.client_profile.company_size} {self.client_profile.industry} companies, and how do you measure success against our current {', '.join(self.client_profile.current_solutions[:1]) if self.client_profile.current_solutions else 'existing systems'}?", 
+            Question("", f"What specific ROI metrics can you provide for {self.client_profile.company_size} {self.client_profile.industry} companies?", 
                     QuestionCategory.ROI_VALUE, QuestionPriority.CRITICAL, 
                     ["roi metrics", "case studies"], ["roi", "metrics", "timeframe"],
-                    "Essential for business case development and stakeholder buy-in", "Quantifiable metrics with industry benchmarks"),
+                    "Essential for business case development", "Quantifiable metrics with industry benchmarks"),
             
-            Question("", f"Given our {self.client_profile.company_size} scale and {', '.join(self.client_profile.technical_requirements[:2]) if self.client_profile.technical_requirements else 'enterprise requirements'}, what are the specific implementation challenges and resource requirements we should anticipate?", 
+            Question("", f"What are the implementation challenges for {self.client_profile.company_size} companies?", 
                     QuestionCategory.IMPLEMENTATION, QuestionPriority.HIGH, 
-                    ["implementation process", "resource planning"], ["implementation", "resources", "timeline"],
-                    "Critical for project planning and resource allocation", "Detailed implementation roadmap with resource estimates"),
+                    ["implementation process"], ["implementation", "resources"],
+                    "Critical for project planning", "Detailed implementation roadmap"),
             
-            Question("", f"How does {self.product_context.vendor} ensure compliance with {', '.join(self.client_profile.compliance_needs[:2]) if self.client_profile.compliance_needs else 'industry regulations'} and what security certifications do you maintain relevant to {self.client_profile.industry} sector?", 
+            Question("", f"How does {self.product_context.vendor} ensure compliance with {self.client_profile.industry} regulations?", 
                     QuestionCategory.SECURITY_COMPLIANCE, QuestionPriority.CRITICAL, 
-                    ["security measures", "compliance"], ["security", "compliance", "certifications"],
-                    "Mandatory for risk management and regulatory compliance", "Specific certifications and compliance documentation")
+                    ["security measures"], ["security", "compliance"],
+                    "Mandatory for risk management", "Specific certifications")
         ]
         
         self.question_stack.extend(fallback_questions)
         for question in fallback_questions:
             self.all_generated_questions[question.id] = question
     
-    async def _generate_contextual_questions(self, user_input: str):
-        """Generate sophisticated follow-up questions based on conversation context"""
+    def _maybe_add_dynamic_question(self, user_input: str):
+        """Add dynamic questions based on keywords in salesperson input"""
+        user_input_lower = user_input.lower()
         
-        if len(self.question_stack) < 3:  # Maintain question pipeline
-            contextual_prompt = f"""
-            You are a {self.client_profile.role} from {self.client_profile.company_name} ({self.client_profile.industry}, {self.client_profile.company_size}).
-            
-            The salesperson just said: "{user_input}"
-            
-            Recent conversation context:
-            {json.dumps(self.conversation_context[-3:], indent=2)}
-            
-            Client Profile Context:
-            - Pain Points: {', '.join(self.client_profile.pain_points) if self.client_profile.pain_points else 'Standard challenges'}
-            - Decision Criteria: {', '.join(self.client_profile.decision_criteria) if self.client_profile.decision_criteria else 'ROI and functionality'}
-            - Technical Requirements: {', '.join(self.client_profile.technical_requirements) if self.client_profile.technical_requirements else 'Enterprise standards'}
-            
-            Meeting Stage: {self.meeting_stage}
-            
-            Generate 2-4 sophisticated follow-up questions that:
-            1. Build naturally on what was just discussed
-            2. Probe deeper into business implications
-            3. Reference your specific industry context and company needs
-            4. Show strategic thinking appropriate for your role
-            5. Address potential concerns or risks
-            6. Demonstrate thorough evaluation process
-            
-            Make questions specific, detailed, and business-focused. Include metrics, timelines, and specific business scenarios where relevant.
-            
-            Use the same JSON format as before with business_rationale and expected_answer_type.
-            """
-            
-            try:
-                response = await self.query_rag(contextual_prompt)
-                json_start = response.find('[')
-                json_end = response.rfind(']') + 1
-                if json_start != -1 and json_end > json_start:
-                    json_str = response[json_start:json_end]
-                    questions_data = json.loads(json_str)
-                else:
-                    questions_data = json.loads(response)
+        for keyword, templates in self.dynamic_question_templates.items():
+            if keyword in user_input_lower and len(self.question_stack) < 10:
+                # Check if we already have a question about this topic recently
+                recent_categories = [q.category for q in list(self.all_generated_questions.values())[-5:]]
                 
-                for q_data in questions_data:
-                    if not self._is_duplicate_question(q_data["text"]):
-                        question = Question(
+                for template, category, priority in templates:
+                    if category not in recent_categories:
+                        # Format the template with context
+                        question_text = template.format(
+                            company_size=self.client_profile.company_size,
+                            industry=self.client_profile.industry,
+                            product_name=self.product_context.name,
+                            vendor=self.product_context.vendor,
+                            current_solution=', '.join(self.client_profile.current_solutions[:1]) if self.client_profile.current_solutions else 'existing systems'
+                        )
+                        
+                        # Create and add the dynamic question
+                        dynamic_question = Question(
                             id="",
-                            text=q_data["text"],
-                            category=QuestionCategory(q_data["category"]),
-                            priority=QuestionPriority(q_data["priority"]),
-                            context_needed=q_data["context_needed"],
-                            follow_up_triggers=q_data.get("follow_up_triggers", []),
-                            business_rationale=q_data.get("business_rationale", ""),
-                            expected_answer_type=q_data.get("expected_answer_type", ""),
+                            text=question_text,
+                            category=category,
+                            priority=priority,
+                            context_needed=[keyword],
+                            follow_up_triggers=[keyword],
+                            business_rationale=f"Follow-up on {keyword} discussion",
+                            expected_answer_type="Detailed explanation",
                             timestamp_asked=time.time()
                         )
-                        self.question_stack.append(question)
-                        self.all_generated_questions[question.id] = question
                         
-            except Exception as e:
-                print(f"Error generating contextual questions: {e}")
-    
-    def _is_duplicate_question(self, new_question_text: str) -> bool:
-        """Check if a question is duplicate or very similar to existing ones"""
-        new_question_lower = new_question_text.lower()
-        for existing_question in self.all_generated_questions.values():
-            existing_lower = existing_question.text.lower()
-            # Simple similarity check - could be enhanced with more sophisticated comparison
-            if len(set(new_question_lower.split()) & set(existing_lower.split())) > len(new_question_lower.split()) * 0.6:
-                return True
-        return False
+                        # Insert at beginning for immediate use
+                        self.question_stack.insert(0, dynamic_question)
+                        self.all_generated_questions[dynamic_question.id] = dynamic_question
+                        break
+                break
     
     def _update_answered_questions(self, user_input: str):
         """Enhanced question answering detection with quality scoring"""
@@ -615,7 +591,7 @@ class ClientSimulationAgent:
             self.meeting_stage = "closing"
     
     async def simulate_client_response(self, user_input: str) -> str:
-        """Enhanced client simulation with comprehensive context awareness"""
+        """Enhanced client simulation using llm.ask_gemini() with stored context - NO RAG CALLS"""
         if not self.session_initialized:
             return "Error: Session not initialized. Please call initialize_session() first."
         
@@ -633,8 +609,8 @@ class ClientSimulationAgent:
             # Analyze answered questions
             self._update_answered_questions(user_input)
             
-            # Generate contextual follow-ups
-            await self._generate_contextual_questions(user_input)
+            # Add dynamic questions based on keywords
+            self._maybe_add_dynamic_question(user_input)
             
             # Get next question
             next_question = self._get_next_question()
@@ -643,52 +619,11 @@ class ClientSimulationAgent:
             if not next_question and self._should_end_meeting():
                 return await self._generate_enhanced_meeting_conclusion()
             
-            # Generate sophisticated client response
-            response_prompt = f"""
-            You are {self.client_profile.role} at {self.client_profile.company_name}, a {self.client_profile.company_size} {self.client_profile.industry} company.
+            # Build comprehensive prompt for llm.ask_gemini()
+            prompt = self._build_client_response_prompt(user_input, next_question)
             
-            CLIENT PROFILE:
-            - Role: {self.client_profile.role}
-            - Company: {self.client_profile.company_name} ({self.client_profile.industry}, {self.client_profile.company_size})
-            - Key Pain Points: {', '.join(self.client_profile.pain_points) if self.client_profile.pain_points else 'Standard business challenges'}
-            - Decision Criteria: {', '.join(self.client_profile.decision_criteria) if self.client_profile.decision_criteria else 'ROI and functionality'}
-            - Budget Range: {self.client_profile.budget_range}
-            - Timeline: {self.client_profile.timeline}
-            - Current Solutions: {', '.join(self.client_profile.current_solutions) if self.client_profile.current_solutions else 'Legacy systems'}
-            
-            PRODUCT CONTEXT:
-            - Evaluating: {self.product_context.name} by {self.product_context.vendor}
-            - Key Competitors: {', '.join(self.product_context.main_competitors) if self.product_context.main_competitors else 'Market alternatives'}
-            
-            MEETING CONTEXT:
-            - Current Stage: {self.meeting_stage}
-            - Questions Answered: {len(self.answered_questions)}
-            - Conversation Length: {len(self.conversation_context)} exchanges
-            
-            The salesperson just said: "{user_input}"
-            
-            Recent conversation: {json.dumps(self.conversation_context[-2:], indent=2)}
-            
-            RESPONSE GUIDELINES:
-            1. Respond as a sophisticated {self.client_profile.role} would
-            2. Show appropriate business acumen for your role and company size
-            3. Reference your specific industry context and challenges
-            4. Demonstrate that you're conducting a thorough evaluation
-            5. Show appropriate skepticism and due diligence
-            6. Ask the next question naturally as part of your response
-            
-            Next question to incorporate naturally: "{next_question.text if next_question else 'Continue the evaluation'}"
-            
-            Business rationale for next question: {next_question.business_rationale if next_question else 'Ongoing evaluation'}
-            
-            Generate a professional, contextually aware response (3-5 sentences) that:
-            - Acknowledges the salesperson's input appropriately
-            - Shows your evaluation mindset and business priorities
-            - Naturally transitions to the next question
-            - Reflects your role's perspective and concerns
-            """
-            
-            client_response = await self.query_rag(response_prompt)
+            # Use llm.ask_gemini() instead of RAG
+            client_response = llm.ask_gemini(prompt)
             
             # Add client response to context
             self.conversation_context.append({
@@ -716,6 +651,61 @@ class ClientSimulationAgent:
             ]
             
             return fallback_responses[len(self.conversation_context) % len(fallback_responses)]
+    
+    def _build_client_response_prompt(self, user_input: str, next_question: Optional[Question]) -> str:
+        """Build comprehensive prompt for llm.ask_gemini() using stored context"""
+        
+        # Get recent conversation history
+        recent_conversation = []
+        for entry in self.conversation_context[-4:]:  # Last 4 exchanges
+            role = "Salesperson" if entry["role"] == "salesperson" else "Client"
+            recent_conversation.append(f"{role}: {entry['content']}")
+        
+        conversation_history = "\n".join(recent_conversation)
+        
+        prompt = f"""You are {self.client_profile.role} at {self.client_profile.company_name}, a {self.client_profile.company_size} {self.client_profile.industry} company.
+
+CLIENT PROFILE:
+- Company: {self.client_profile.company_name} ({self.client_profile.industry}, {self.client_profile.company_size})
+- Role: {self.client_profile.role}
+- Pain Points: {', '.join(self.client_profile.pain_points) if self.client_profile.pain_points else 'Standard business challenges'}
+- Decision Criteria: {', '.join(self.client_profile.decision_criteria) if self.client_profile.decision_criteria else 'ROI and functionality'}
+- Budget Range: {self.client_profile.budget_range}
+- Timeline: {self.client_profile.timeline}
+- Current Solutions: {', '.join(self.client_profile.current_solutions) if self.client_profile.current_solutions else 'Legacy systems'}
+
+PRODUCT BEING EVALUATED:
+- {self.product_context.name} by {self.product_context.vendor}
+- Key Competitors: {', '.join(self.product_context.main_competitors) if self.product_context.main_competitors else 'Market alternatives'}
+
+COMPREHENSIVE MARKET CONTEXT:
+{self.stored_context}
+
+MEETING CONTEXT:
+- Current Stage: {self.meeting_stage}
+- Questions Answered: {len(self.answered_questions)}
+- Conversation Length: {len(self.conversation_context)} exchanges
+
+RECENT CONVERSATION:
+{conversation_history}
+
+CURRENT SITUATION:
+The salesperson just said: "{user_input}"
+
+RESPONSE GUIDELINES:
+1. Respond as a sophisticated {self.client_profile.role} would
+2. Show appropriate business acumen for your role and company size
+3. Reference your specific industry context and challenges
+4. Demonstrate thorough evaluation mindset
+5. Show appropriate skepticism and due diligence
+6. Ask the next question naturally as part of your response
+
+{f"NEXT QUESTION TO INCORPORATE: {next_question.text}" if next_question else "CONTINUE EVALUATION"}
+{f"Business rationale: {next_question.business_rationale}" if next_question else ""}
+
+Generate a professional, contextually aware response (3-5 sentences) that acknowledges the salesperson's input and naturally transitions to the next question or evaluation point."""
+
+        return prompt
     
     def _get_next_question(self) -> Optional[Question]:
         """Get the next prioritized question"""
@@ -778,7 +768,7 @@ class ClientSimulationAgent:
                (self.meeting_stage == "closing" and sufficient_conversation)
     
     async def _generate_enhanced_meeting_conclusion(self) -> str:
-        """Generate sophisticated meeting conclusion"""
+        """Generate sophisticated meeting conclusion using llm.ask_gemini()"""
         
         # Calculate meeting metrics
         total_questions = len(self.all_generated_questions)
@@ -786,43 +776,31 @@ class ClientSimulationAgent:
         avg_quality_score = sum(q.answer_quality_score for q in self.answered_questions.values()) / len(self.answered_questions) if self.answered_questions else 0
         
         covered_categories = list(set(q.category.value for q in self.answered_questions.values()))
-        high_priority_answered = len([q for q in self.answered_questions.values() if q.priority in [QuestionPriority.CRITICAL, QuestionPriority.HIGH]])
         
-        conclusion_prompt = f"""
-        You are concluding a sales meeting as {self.client_profile.role} at {self.client_profile.company_name}.
-        
-        CLIENT CONTEXT:
-        - Company: {self.client_profile.company_name} ({self.client_profile.industry}, {self.client_profile.company_size})
-        - Role: {self.client_profile.role}
-        - Timeline: {self.client_profile.timeline}
-        - Decision Criteria: {', '.join(self.client_profile.decision_criteria) if self.client_profile.decision_criteria else 'Standard criteria'}
-        
-        MEETING ANALYSIS:
-        - Questions Asked: {answered_questions}/{total_questions}
-        - Categories Covered: {', '.join(covered_categories)}
-        - High Priority Topics Addressed: {high_priority_answered}
-        - Answer Quality Average: {avg_quality_score:.1f}/1.0
-        - Meeting Duration: {len(self.conversation_context)} exchanges
-        - Final Stage: {self.meeting_stage}
-        
-        CONVERSATION SUMMARY:
-        {json.dumps(self.conversation_context[-3:], indent=2)}
-        
-        Generate a professional, role-appropriate conclusion that:
-        1. Thanks the salesperson professionally
-        2. Acknowledges the information quality and completeness
-        3. Summarizes key evaluation points relevant to your decision criteria
-        4. Outlines realistic next steps based on your company's process
-        5. Indicates appropriate level of interest based on the meeting quality
-        6. Mentions internal stakeholders or processes as appropriate for your role
-        7. Provides clear timeline expectations
-        
-        Make it sound natural for a {self.client_profile.role} at a {self.client_profile.company_size} {self.client_profile.industry} company.
-        Keep it professional and substantive (4-6 sentences).
-        """
-        
+        conclusion_prompt = f"""You are concluding a sales meeting as {self.client_profile.role} at {self.client_profile.company_name}.
+
+CLIENT CONTEXT:
+- Company: {self.client_profile.company_name} ({self.client_profile.industry}, {self.client_profile.company_size})
+- Role: {self.client_profile.role}
+- Timeline: {self.client_profile.timeline}
+- Decision Criteria: {', '.join(self.client_profile.decision_criteria) if self.client_profile.decision_criteria else 'Standard criteria'}
+
+MEETING SUMMARY:
+- Questions Addressed: {answered_questions}/{total_questions}
+- Topics Covered: {', '.join(covered_categories)}
+- Meeting Quality: {'High' if avg_quality_score > 0.7 else 'Medium' if avg_quality_score > 0.5 else 'Basic'}
+- Duration: {len(self.conversation_context)} exchanges
+
+Generate a professional conclusion (4-6 sentences) that:
+1. Thanks the salesperson professionally
+2. Summarizes key evaluation points
+3. Outlines realistic next steps for your role
+4. Indicates appropriate interest level based on meeting quality
+5. Mentions internal processes/stakeholders as appropriate
+6. Provides clear timeline expectations"""
+
         try:
-            conclusion = await self.query_rag(conclusion_prompt)
+            conclusion = llm.ask_gemini(conclusion_prompt)
             
             # Add conclusion to conversation context
             self.conversation_context.append({
@@ -849,7 +827,7 @@ class ClientSimulationAgent:
             else:
                 return f"Thank you for the introduction to {self.product_context.name}. I'll need to gather some additional information internally and discuss this with our evaluation committee. We'll be in touch if we decide to move forward with a more detailed evaluation. Have a good day."
     
-    # Enhanced status and reporting methods
+    # Enhanced status and reporting methods (keeping existing functionality)
     def get_enhanced_session_status(self) -> Dict[str, Any]:
         """Get comprehensive session status with detailed metrics"""
         if not self.session_initialized:
@@ -1097,7 +1075,7 @@ class ClientSimulationAgent:
 
 # Enhanced example usage with improved error handling and timeouts
 async def enhanced_demo():
-    """Enhanced demonstration of the improved ClientSimulationAgent with timeout fixes"""
+    """Enhanced demonstration of the improved ClientSimulationAgent"""
 
     fastapi_base_url = "http://localhost:8000"
     
@@ -1105,12 +1083,11 @@ async def enhanced_demo():
         # Step 1: Call scrape-all with proper timeout handling
         print("=== Triggering Scrape-All (with extended timeout) ===")
         
-        # Configure client with extended timeouts
         timeout_config = httpx.Timeout(
-            connect=60.0,    # 30 seconds to connect
-            read=3600.0,      # 60 minutes for scraping operations (can be long)
-            write=60.0,      # 30 seconds to write
-            pool=60.0        # 30 seconds for connection pool
+            connect=60.0,
+            read=3600.0,
+            write=60.0,
+            pool=60.0
         )
         
         async with httpx.AsyncClient(timeout=timeout_config) as client:
@@ -1126,16 +1103,14 @@ async def enhanced_demo():
                 scrape_all_response = await client.post(f"{fastapi_base_url}/scrape-all", json=scrape_all_payload)
                 print(f"Scrape-All Response: {scrape_all_response.json()}")
             except httpx.ReadTimeout:
-                print("Scrape-all operation timed out. This might be normal for large scraping operations.")
-                print("Continuing with simulation using available data...")
+                print("Scrape-all operation timed out. Continuing with simulation using available data...")
             except httpx.ConnectTimeout:
                 print("Could not connect to FastAPI service. Please ensure it's running on localhost:8000")
                 return
             except Exception as e:
                 print(f"Error during scrape-all: {e}")
-                print("Continuing with simulation...")
 
-        # Step 2: Run the simulation with enhanced error handling
+        # Step 2: Run the simulation
         print("\n=== Initializing Client Simulation Agent ===")
         agent = ClientSimulationAgent(fastapi_base_url=fastapi_base_url)
         
@@ -1160,12 +1135,12 @@ async def enhanced_demo():
             print(f"Product: {status['product_context']['name']} by {status['product_context']['vendor']}")
             print(f"Generated {status['question_metrics']['total_generated']} contextual questions")
 
-            # Simulate sophisticated conversation
+            # Simulate conversation
             sales_responses = [
-                "EnterpriseCloud Pro offers 99.99% uptime SLA with auto-failover across 15 global data centers, specifically designed for manufacturing operations with real-time data processing capabilities.",
-                "Compared to AWS and Azure, we provide 40% better price-performance for manufacturing workloads, with dedicated support for IoT device integration and predictive maintenance analytics.",
-                "Our typical enterprise manufacturing clients see ROI within 8-12 months, with average cost savings of $2.3M annually through improved operational efficiency and reduced downtime.",
-                "Implementation typically takes 12-16 weeks for enterprise manufacturing, including full data migration, staff training, and integration with existing MES and ERP systems."
+                "EnterpriseCloud Pro offers 99.99% uptime SLA with auto-failover across 15 global data centers, specifically designed for manufacturing operations.",
+                "Compared to AWS and Azure, we provide 40% better price-performance for manufacturing workloads with dedicated IoT integration.",
+                "Our enterprise manufacturing clients see ROI within 8-12 months, with average cost savings of $2.3M annually.",
+                "Implementation typically takes 12-16 weeks including full data migration and staff training."
             ]
 
             print("\n=== Simulated Sales Conversation ===")
@@ -1179,43 +1154,10 @@ async def enhanced_demo():
                     
                     current_status = agent.get_enhanced_session_status()
                     print(f"[Status: {current_status['meeting_assessment']['meeting_quality']} meeting, "
-                          f"{current_status['question_metrics']['answer_rate']:.1f}% questions addressed, "
-                          f"Stage: {current_status['session_info']['meeting_stage']}]")
+                          f"{current_status['question_metrics']['answer_rate']:.1f}% questions addressed]")
                 except Exception as e:
                     print(f"Error in client response: {e}")
-                    print("Continuing with next exchange...")
 
-            # Generate comprehensive analysis
-            print("\n=== Comprehensive Meeting Analysis ===")
-            try:
-                analysis = agent.get_detailed_questions_analysis()
-
-                print(f"\nUnanswered Critical Questions: {len(analysis['unanswered_critical'])}")
-                for q in analysis['unanswered_critical'][:3]:
-                    print(f"  - [{q['category']}] {q['text'][:80]}...")
-
-                print(f"\nTop Quality Interactions:")
-                for q in analysis['top_quality_answers'][:3]:
-                    print(f"  - [{q['category']}] Score: {q['quality_score']:.2f} - {q['text'][:60]}...")
-
-                if analysis['areas_needing_attention']:
-                    print(f"\nAreas Needing Attention:")
-                    for area in analysis['areas_needing_attention']:
-                        print(f"  - {area['category']}: {area['avg_quality']:.2f} avg quality")
-
-                # Export comprehensive summary
-                summary = agent.export_comprehensive_summary()
-                print(f"\n=== Meeting Recommendations ===")
-                for rec in summary['recommendations']:
-                    print(f"  • {rec}")
-
-                print(f"\nMeeting Completion: {summary['session_overview']['meeting_assessment']['completion_percentage']:.1f}%")
-                print(f"Overall Quality: {summary['session_overview']['meeting_assessment']['meeting_quality']}")
-            
-            except Exception as e:
-                print(f"Error generating analysis: {e}")
-
-            # Cleanup
             await agent.cleanup_rag()
             print("\n=== Session completed successfully ===")
         else:
@@ -1223,10 +1165,6 @@ async def enhanced_demo():
             
     except Exception as e:
         print(f"Critical error in demo: {e}")
-        print("Please ensure:")
-        print("1. FastAPI service is running on localhost:8000")
-        print("2. RAG system is properly initialized")
-        print("3. Network connectivity is available")
 
 if __name__ == "__main__":
     asyncio.run(enhanced_demo())
