@@ -151,7 +151,7 @@ class StreamingWhisperTranscriber:
             try:
                 payload = {"transcription": transcription, "response": response}
                 await self.websocket_connection.send_text(json.dumps(payload))
-                logger.info(f"Sent data to WebSocket: {payload}")
+                logger.info(f"---------------------Sent data to WebSocket ------------------------------")
             except Exception as e:
                 logger.error(f"Failed to send data via WebSocket: {type(e).__name__}: {str(e)}")
                 self.websocket_connection = None
@@ -292,7 +292,7 @@ class StreamingWhisperTranscriber:
                 if not self.websocket_connection.client_state == WebSocketDisconnect:
                     # Run WebSocket close in the correct event loop
                     future = asyncio.run_coroutine_threadsafe(self.websocket_connection.close(), self.loop)
-                    future.result(timeout=5.0)
+                    future.result(timeout=30)
                     logger.info("WebSocket connection closed successfully")
                 else:
                     logger.info("WebSocket already disconnected, no need to close")
@@ -318,7 +318,7 @@ class StreamingWhisperTranscriber:
                         self.loop.close()
                 
                 future = asyncio.run_coroutine_threadsafe(shutdown_server(), self.loop)
-                future.result(timeout=10.0)
+                future.result(timeout=30.0)
                 logger.info("Uvicorn server shut down successfully")
             except TimeoutError:
                 logger.warning("Timeout while shutting down Uvicorn server, forcing cleanup")

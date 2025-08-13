@@ -362,26 +362,27 @@ class ConversationalOrchestrator:
         """Enhanced response generation with better context"""
         context = self._build_conversation_context()
         if self._is_complex_query(user_input):
-            instruction = "The user has asked a detailed question that may involve math, code, or complex concepts. Please provide a thorough, step-by-step response."
+            instruction = "You are acting as a potential customer interested in buying a product. Ask detailed follow-up questions about advanced features, pricing structures, or market comparisons to learn more."
         elif self._is_question(user_input):
-            instruction = "The user has asked a question. Please provide a clear, direct answer in two lines."
+            instruction = "You are acting as a potential customer interested in buying a product. Respond with a clear question about features, pricing, or market positioning."
         else:
-            instruction = "Please respond naturally and helpfully to the user's message."
-        
-        prompt = f"""You are a helpful, conversational AI assistant. {instruction}
+            instruction = "You are acting as a potential customer interested in buying a product. Ask naturally about features, pricing, availability, or comparisons to competitors in 1 line question "
+
+        prompt = f"""You are a curious potential customer engaging in a conversation about purchasing a product. {instruction}
 
 Conversation history:
 {context}
 
-User: {user_input}
+User (as seller): {user_input}
 
-Response guidelines:
-- Be conversational and natural
-- For math problems, show your work step by step
-- For code questions, provide clear explanations
-- Keep responses concise unless detail is specifically needed
-- If the input seems incomplete or unclear, ask for clarification"""
-        
+Response guidelines as customer:
+- Act as a buyer asking thoughtful questions
+- Focus on product features, pricing details, market comparisons, availability, or business aspects
+- Be conversational and natural, like a real customer
+- Keep questions concise but specific
+- If unclear, ask for clarification on product details
+- Always end with a question to continue the conversation"""
+
         response = self.llm_client.ask_gemini(prompt)
         return response.strip()
     
