@@ -11,6 +11,7 @@ import torch
 import whisper
 import pyaudio
 import uvicorn
+import collections  # NEW for speech frame buffer
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -47,14 +48,13 @@ class StreamingWhisperTranscriber:
         self.frame_energy_threshold = 0.01
 
         # Silence config (default 5s). Set to None to disable automatic silence notifying.
-        self.silence_seconds_threshold = 5.0
+        self.silence_seconds_threshold = 3.5
 
         # State for silence tracking
         self.last_speech_time = time.time()
         self.silence_notified = False
 
         # Buffers & threads
-        self.audio_buffer = deque = list  # placeholder, we replace with deque below
         from collections import deque as _dq
         self.audio_buffer = _dq()
         self.processing_queue = queue.Queue()
@@ -65,7 +65,13 @@ class StreamingWhisperTranscriber:
         self.input_source = input_source
         self.websocket_host = websocket_host
         self.websocket_port = websocket_port
-        self.callback = callback  # optional external callback (orchestrator.response_callback)
+        self.callback = callback
+
+        # NEW: Adaptive noise floor + speech frame history
+        self.noise_floor = 0.0
+        self.noise_alpha = 0.95  # smoothing factor
+        self.min_speech_frames = 3
+        self.speech_frame_buffer = collections.deque(maxlen=self.min_speech_frames)
 
         # load Whisper model
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -90,12 +96,23 @@ class StreamingWhisperTranscriber:
 
     # ---------- helpers ----------
     def _frame_has_speech(self, frame: np.ndarray) -> bool:
-        """Return True if frame RMS energy exceeds threshold."""
+        """Return True if frame RMS energy exceeds adaptive threshold."""
         if frame is None or frame.size == 0:
             return False
         frame = frame.astype(np.float32)
         rms = float(np.sqrt(np.mean(frame * frame) + 1e-12))
-        return rms >= self.frame_energy_threshold
+
+        # Update noise floor when low RMS
+        if rms < self.frame_energy_threshold * 2:
+            self.noise_floor = (self.noise_alpha * self.noise_floor +
+                                (1 - self.noise_alpha) * rms)
+
+        adaptive_threshold = max(self.frame_energy_threshold, self.noise_floor * 3)
+
+        # Speech detection with consecutive frame logic
+        is_speech = rms >= adaptive_threshold
+        self.speech_frame_buffer.append(is_speech)
+        return sum(self.speech_frame_buffer) >= self.min_speech_frames
 
     def _clean_text(self, text: str) -> str:
         if not text:
@@ -125,7 +142,7 @@ class StreamingWhisperTranscriber:
         sys.stdout.write(f"🎙️  {display_text}")
         sys.stdout.flush()
 
-        # call callback (orchestrator.response_callback) if present
+        # call callback if present
         try:
             if self.callback:
                 self.callback(new_text)
@@ -148,9 +165,7 @@ class StreamingWhisperTranscriber:
                 while True:
                     data = await websocket.receive_bytes()
                     audio_np = np.frombuffer(data, dtype=np.float32)
-                    # append into buffer
                     self.audio_buffer.extend(audio_np.tolist())
-                    # if enough data, process chunk (keeps overlap logic inside)
                     if len(self.audio_buffer) >= self.chunk_size:
                         self._process_audio_chunk()
             except WebSocketDisconnect:
@@ -161,20 +176,15 @@ class StreamingWhisperTranscriber:
                 self.websocket_connection = None
 
     def _process_audio_chunk(self):
-        """Grabs the most recent chunk_size samples (keeping overlap) and enqueue for processing."""
+        """Grabs most recent chunk_size samples (with overlap) and enqueue for processing."""
         if len(self.audio_buffer) < self.chunk_size:
             return
-        # take last chunk_size samples
-        # convert to numpy array float32
         arr = np.array(list(self.audio_buffer)[-self.chunk_size:], dtype=np.float32)
-        # preserve an overlap of 0.5s (optional). To keep it simple, keep 0.5s overlap:
         overlap_seconds = 0.5
         overlap_size = int(self.sample_rate * overlap_seconds)
-        # drop everything except last overlap_size to keep sliding window
         keep = list(self.audio_buffer)[-overlap_size:] if overlap_size > 0 else []
         self.audio_buffer.clear()
         self.audio_buffer.extend(keep)
-        # enqueue chunk
         self.processing_queue.put(arr)
 
     # ---------- main processing loop ----------
@@ -186,11 +196,9 @@ class StreamingWhisperTranscriber:
                 try:
                     if audio_chunk is None:
                         continue
-
-                    # ensure float32
                     audio_chunk = audio_chunk.astype(np.float32)
 
-                    # Frame-level scan inside this 5s chunk
+                    # Frame-level scan
                     saw_speech_in_chunk = False
                     n = len(audio_chunk)
                     pos = 0
@@ -198,7 +206,6 @@ class StreamingWhisperTranscriber:
                         frame = audio_chunk[pos: pos + self.frame_size]
                         if self._frame_has_speech(frame):
                             saw_speech_in_chunk = True
-                            # update last_speech_time to now
                             self.last_speech_time = time.time()
                             break
                         pos += self.frame_hop
@@ -218,21 +225,17 @@ class StreamingWhisperTranscriber:
                                 except Exception:
                                     logger.exception("Error notifying orchestrator")
                             self.silence_notified = True
-
-                        # don't transcribe fully silent chunk
                         continue
                     else:
-                        # speech seen -> reset notification flag
                         self.silence_notified = False
 
-                    # Transcribe the chunk with Whisper
+                    # Transcribe
                     try:
                         result = self.model.transcribe(
                             audio_chunk,
                             task="transcribe",
                             language="en",
                             fp16=torch.cuda.is_available(),
-                            # keep thresholds conservative — we already gate by frame energy
                         )
                     except Exception:
                         logger.exception("Whisper transcription failed")
@@ -240,7 +243,6 @@ class StreamingWhisperTranscriber:
 
                     new_text = self._clean_text(result.get("text", ""))
                     if new_text and new_text != self.last_chunk_text:
-                        # update display and possibly call orchestrator via callback
                         self._update_streaming_display(new_text)
                         self.last_chunk_text = new_text
                 finally:
@@ -252,7 +254,6 @@ class StreamingWhisperTranscriber:
                 continue
             except Exception:
                 logger.exception("Error in transcriber processing loop")
-
         logger.info("Transcriber processing loop stopped")
 
     # ---------- control ----------
@@ -260,22 +261,18 @@ class StreamingWhisperTranscriber:
         if self.is_running:
             logger.warning("Transcription already running")
             return
-        # init input
         if self.input_source == "mic":
             self._init_microphone()
         elif self.input_source == "websocket":
             self._init_websocket()
-        # start threads
         self.is_running = True
         if not self.processing_thread.is_alive():
             self.processing_thread = threading.Thread(target=self._processing_loop, daemon=True)
             self.processing_thread.start()
-        # if websocket mode, run uvicorn in main thread if desired -- usually the outer server handles this
         logger.info("Transcription started")
 
     def stop_transcription(self):
         self.is_running = False
-        # drain queue
         try:
             self.processing_queue.put(None)
         except Exception:
@@ -294,20 +291,17 @@ class StreamingWhisperTranscriber:
     def reset_for_new_conversation(self):
         logger.info("Resetting transcriber state for a new conversation")
         self.audio_buffer.clear()
-        # re-create processing queue to drop stale tasks
         self.processing_queue = queue.Queue()
         self.full_transcription = ""
         self.last_chunk_text = ""
         self.silence_notified = False
         self.last_speech_time = time.time()
-        # clear orchestrator last processed text if present (defensive)
         if hasattr(self, "orchestrator") and self.orchestrator:
             try:
                 self.orchestrator._last_processed_text = ""
             except Exception:
                 pass
 
-    # small helper for quick testing
     def test_whisper(self, test_audio_path=None):
         print("Testing Whisper model")
         if test_audio_path:
@@ -321,7 +315,6 @@ class StreamingWhisperTranscriber:
             print("Result:", res.get("text", ""))
 
 
-# if run standalone for quick tests
 if __name__ == "__main__":
     tr = StreamingWhisperTranscriber(model_name="base", input_source="mic")
     tr.start_transcription()

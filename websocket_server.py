@@ -9,6 +9,7 @@ import uvicorn
 from auxx import StreamingWhisperTranscriber
 from orchestrator_test import ConversationalOrchestrator, ConversationState
 from agent import ClientSimulationAgent  # ensure this module exists
+from TTS import generate_speak_and_sync_payload  # ensure this module exists
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ async def lifespan(app: FastAPI):
     # wire them
     orchestrator.set_transcriber(transcriber)
     # tune defaults (if desired)
-    transcriber.silence_seconds_threshold = 5.0
+    transcriber.silence_seconds_threshold = 3.5
     transcriber.frame_energy_threshold = 0.01
 
     # Give transcriber a hook to post partials into the main event loop
@@ -65,10 +66,10 @@ async def lifespan(app: FastAPI):
         except Exception:
             logger.exception("Error in original_update")
         # schedule partial transcription to websocket clients
-        try:
+        """ try:
             main_loop.call_soon_threadsafe(send_queue.put_nowait, {"type": "partial_transcription", "text": transcriber.full_transcription})
         except Exception:
-            logger.exception("Failed to enqueue partial_transcription")
+            logger.exception("Failed to enqueue partial_transcription") """
 
     transcriber._update_streaming_display = enhanced_update
 
@@ -82,8 +83,9 @@ async def lifespan(app: FastAPI):
             except Exception:
                 logger.exception("Error in original handle response")
         try:
-            main_loop.call_soon_threadsafe(send_queue.put_nowait, {"type": "user_sentence", "text": user_input})
-            main_loop.call_soon_threadsafe(send_queue.put_nowait, {"type": "assistant_response", "text": response})
+            #main_loop.call_soon_threadsafe(send_queue.put_nowait, {"type": "user_sentence", "text": user_input})
+            data_back = generate_speak_and_sync_payload(response, message_id="from_orchestrator")
+            main_loop.call_soon_threadsafe(send_queue.put_nowait, {"response" : data_back} )
         except Exception:
             logger.exception("Failed to schedule messages")
 

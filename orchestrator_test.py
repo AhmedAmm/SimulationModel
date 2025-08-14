@@ -37,10 +37,10 @@ class ConversationalOrchestrator:
         self,
         agent: ClientSimulationAgent,
         use_tts: bool = True,
-        sentence_timeout: float = 5.0,
+        sentence_timeout: float = 3.5,
         min_sentence_length: int = 5,
         conversation_context_limit: int = 20,
-        extended_timeout: float = 5.0,
+        extended_timeout: float = 3.5,
     ):
         self.agent = agent
         self.use_tts = use_tts

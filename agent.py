@@ -762,6 +762,7 @@ Generate a professional, contextually aware response (3-5 sentences) that acknow
         
         category_coverage = len(covered_categories) / len(important_categories)
         
+        return False
         # End meeting if comprehensive evaluation completed
         return (no_questions and sufficient_conversation) or \
                (critical_coverage >= 0.8 and category_coverage >= 0.6) or \
